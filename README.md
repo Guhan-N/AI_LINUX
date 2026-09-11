@@ -73,12 +73,18 @@ It is designed with **zero bloat**: starts up in milliseconds, runs on less than
 
 ## 🚀 Quick Start & Installation
 
-### Option 1: One-Line Automated Installer (Recommended)
-On your Linux machine (Ubuntu, Debian, Arch, Fedora, Alpine, etc.):
+### Option 1: One-Line Curl Installer (Fastest)
+On any Linux machine (Ubuntu, Debian, Arch, Fedora, Alpine, etc.):
 
 ```bash
-git clone https://github.com/your-username/linagent.git
-cd linagent
+curl -sSL https://raw.githubusercontent.com/Guhan-N/AI_LINUX/main/install.sh | bash
+```
+
+### Option 2: Clone and Install
+
+```bash
+git clone https://github.com/Guhan-N/AI_LINUX.git
+cd AI_LINUX
 chmod +x install.sh
 ./install.sh
 ```

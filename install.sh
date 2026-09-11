@@ -49,12 +49,23 @@ if [ ! -d "$VENV_DIR" ]; then
     python3 -m venv "$VENV_DIR"
 fi
 
-# 4. Copy LinAgent files to INSTALL_DIR
-echo -e "${COLOR_CYAN}Copying LinAgent files...${COLOR_RESET}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cp -r "$SCRIPT_DIR/linagent" "$INSTALL_DIR/"
-cp "$SCRIPT_DIR/pyproject.toml" "$INSTALL_DIR/" 2>/dev/null || true
-cp "$SCRIPT_DIR/setup.py" "$INSTALL_DIR/" 2>/dev/null || true
+# 4. Fetch or copy LinAgent files
+echo -e "${COLOR_CYAN}Setting up LinAgent files...${COLOR_RESET}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+
+if [ -d "$SCRIPT_DIR/linagent" ]; then
+    cp -r "$SCRIPT_DIR/linagent" "$INSTALL_DIR/"
+    cp "$SCRIPT_DIR/pyproject.toml" "$INSTALL_DIR/" 2>/dev/null || true
+    cp "$SCRIPT_DIR/setup.py" "$INSTALL_DIR/" 2>/dev/null || true
+else
+    echo -e "${COLOR_CYAN}Fetching latest LinAgent from https://github.com/Guhan-N/AI_LINUX.git...${COLOR_RESET}"
+    TMP_CLONE=$(mktemp -d)
+    git clone https://github.com/Guhan-N/AI_LINUX.git "$TMP_CLONE"
+    cp -r "$TMP_CLONE/linagent" "$INSTALL_DIR/"
+    cp "$TMP_CLONE/pyproject.toml" "$INSTALL_DIR/" 2>/dev/null || true
+    cp "$TMP_CLONE/setup.py" "$INSTALL_DIR/" 2>/dev/null || true
+    rm -rf "$TMP_CLONE"
+fi
 
 # 5. Install Python dependencies
 echo -e "${COLOR_CYAN}Installing dependencies into virtual environment...${COLOR_RESET}"
