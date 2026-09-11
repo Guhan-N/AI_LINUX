@@ -3,7 +3,7 @@
 import sys
 
 # Import all tool modules so decorators execute
-from linagent.tools.automation import shell, system, packages, services, scheduler
+from linagent.tools.automation import shell, system, packages, services, scheduler, desktop
 from linagent.tools.files import manager
 from linagent.tools.web import search, browser
 from linagent.tools.memory import store, skills
