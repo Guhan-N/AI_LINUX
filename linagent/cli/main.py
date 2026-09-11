@@ -120,7 +120,7 @@ def configure_wizard() -> None:
     print("Select LLM Provider:")
     print("  1) Ollama (100% Free, Local, Offline - e.g. llama3.2, qwen2.5-coder)")
     print("  2) Groq (Free fast cloud API - e.g. llama-3.3-70b-versatile)")
-    print("  3) Google Gemini (Free tier, fast - e.g. gemini-2.0-flash)")
+    print("  3) Google Gemini (Free tier, fast - e.g. gemini-2.5-flash)")
     print("  4) OpenAI (e.g. gpt-4o-mini, gpt-4o)")
     print("  5) Custom OpenAI-compatible endpoint (vLLM, LocalAI, LM Studio)")
 

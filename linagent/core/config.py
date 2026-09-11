@@ -122,7 +122,7 @@ def load_config() -> LinAgentConfig:
         if gemini_keys:
             waterfall.append(ProviderSpec(
                 provider="gemini",
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 api_keys=gemini_keys,
             ))
 
