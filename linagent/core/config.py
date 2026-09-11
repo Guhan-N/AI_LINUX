@@ -4,7 +4,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 # Determine platform-specific base configuration directories
@@ -29,14 +29,26 @@ def get_default_data_dir() -> Path:
 DEFAULT_CONFIG_DIR = get_default_config_dir()
 DEFAULT_DATA_DIR = get_default_data_dir()
 
+class ProviderSpec(BaseModel):
+    provider: str = Field(default="ollama", description="Provider name: 'ollama', 'gemini', 'groq', 'openai', 'openrouter', 'custom'")
+    model: str = Field(default="llama3.2:1b", description="Model name")
+    api_keys: List[str] = Field(default_factory=list, description="List of API keys for round-robin / failover rotation")
+    base_url: Optional[str] = Field(default=None, description="Custom base URL")
+    temperature: float = Field(default=0.2, description="Temperature")
+
 class LinAgentConfig(BaseModel):
-    # LLM Settings
-    provider: str = Field(default="ollama", description="LLM provider: 'ollama', 'groq', 'gemini', 'openai', 'custom'")
-    model: str = Field(default="llama3.2:3b", description="Model name (e.g. llama3.2:3b, llama-3.3-70b-versatile, gemini-2.0-flash, gpt-4o-mini)")
+    # Primary LLM Settings
+    provider: str = Field(default="ollama", description="Primary LLM provider: 'ollama', 'groq', 'gemini', 'openai', 'openrouter', 'custom'")
+    model: str = Field(default="llama3.2:1b", description="Model name (e.g. llama3.2:1b, llama3.2:3b, llama-3.3-70b-versatile, gemini-2.0-flash)")
     api_key: Optional[str] = Field(default=None, description="API key (if using cloud providers)")
-    base_url: Optional[str] = Field(default=None, description="Custom endpoint base URL (e.g. http://localhost:11434/v1 for Ollama)")
+    api_keys: List[str] = Field(default_factory=list, description="Multiple API keys for rotation")
+    base_url: Optional[str] = Field(default=None, description="Custom endpoint base URL")
     temperature: float = Field(default=0.2, description="Sampling temperature")
     max_tokens: int = Field(default=4096, description="Max output tokens")
+
+    # Key Rotation & Multi-Provider Failover Waterfall
+    failover_enabled: bool = Field(default=True, description="Automatically rotate keys and failover across providers on rate limits (HTTP 429) or connection failures")
+    failover_providers: List[ProviderSpec] = Field(default_factory=list, description="Waterfall chain of fallback providers")
     
     # Safety & Execution
     safe_mode: bool = Field(default=True, description="Prompt user before executing potentially destructive shell commands")
@@ -92,8 +104,58 @@ def load_config() -> LinAgentConfig:
         elif os.getenv("OPENAI_API_KEY") and data.get("provider") == "openai":
             data["api_key"] = os.getenv("OPENAI_API_KEY")
 
+    # Support multi-key environment variables (comma separated)
+    if os.getenv("LINAGENT_API_KEYS"):
+        data["api_keys"] = [k.strip() for k in os.getenv("LINAGENT_API_KEYS", "").split(",") if k.strip()]
+
     if os.getenv("LINAGENT_BASE_URL"):
         data["base_url"] = os.getenv("LINAGENT_BASE_URL")
+
+    # Auto-populate failover waterfall if not explicitly configured in config.json
+    if "failover_providers" not in data or not data["failover_providers"]:
+        waterfall = []
+
+        # 1. Gemini (if key available)
+        gemini_keys = [k.strip() for k in os.getenv("GEMINI_API_KEYS", "").split(",") if k.strip()]
+        if os.getenv("GEMINI_API_KEY") and os.getenv("GEMINI_API_KEY") not in gemini_keys:
+            gemini_keys.insert(0, os.getenv("GEMINI_API_KEY"))
+        if gemini_keys:
+            waterfall.append(ProviderSpec(
+                provider="gemini",
+                model="gemini-2.0-flash",
+                api_keys=gemini_keys,
+            ))
+
+        # 2. Groq (if key available)
+        groq_keys = [k.strip() for k in os.getenv("GROQ_API_KEYS", "").split(",") if k.strip()]
+        if os.getenv("GROQ_API_KEY") and os.getenv("GROQ_API_KEY") not in groq_keys:
+            groq_keys.insert(0, os.getenv("GROQ_API_KEY"))
+        if groq_keys:
+            waterfall.append(ProviderSpec(
+                provider="groq",
+                model="llama-3.3-70b-versatile",
+                api_keys=groq_keys,
+            ))
+
+        # 3. OpenRouter (if key available)
+        or_keys = [k.strip() for k in os.getenv("OPENROUTER_API_KEYS", "").split(",") if k.strip()]
+        if os.getenv("OPENROUTER_API_KEY") and os.getenv("OPENROUTER_API_KEY") not in or_keys:
+            or_keys.insert(0, os.getenv("OPENROUTER_API_KEY"))
+        if or_keys:
+            waterfall.append(ProviderSpec(
+                provider="openrouter",
+                model="meta-llama/llama-3.2-3b-instruct:free",
+                api_keys=or_keys,
+            ))
+
+        # 4. Local Ollama (Always present as offline ultimate fallback)
+        waterfall.append(ProviderSpec(
+            provider="ollama",
+            model=data.get("model") if data.get("provider") == "ollama" else "llama3.2:1b",
+            base_url=data.get("base_url") or "http://localhost:11434/v1",
+        ))
+
+        data["failover_providers"] = [p.model_dump() for p in waterfall]
 
     cfg = LinAgentConfig(**data)
     

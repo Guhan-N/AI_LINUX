@@ -28,7 +28,8 @@ def _print_banner(cfg: LinAgentConfig) -> None:
                            |___/                
     """[1:])
     print(f"  LinAgent v{__version__} | Lightweight Linux AI Assistant")
-    print(f"  Backend: {cfg.provider.upper()} ({cfg.model}) | Safe Mode: {'ON' if cfg.safe_mode else 'OFF'}")
+    failover_badge = f"ON ({len(cfg.failover_providers)} providers)" if cfg.failover_enabled and cfg.failover_providers else "OFF"
+    print(f"  Backend: {cfg.provider.upper()} ({cfg.model}) | Smart Failover: {failover_badge} | Safe Mode: {'ON' if cfg.safe_mode else 'OFF'}")
     print(f"  Type '/help' for commands, '/exit' to quit.\n")
 
 def interactive_chat(agent: LinAgent) -> None:
@@ -136,9 +137,11 @@ def configure_wizard() -> None:
         if base_url:
             cfg.base_url = base_url
     elif cfg.provider in ("groq", "gemini", "openai"):
-        key = input(f"Enter API Key for {cfg.provider.upper()}: ").strip()
-        if key:
-            cfg.api_key = key
+        key_input = input(f"Enter API Key(s) for {cfg.provider.upper()} (comma-separated for rotation): ").strip()
+        if key_input:
+            keys = [k.strip() for k in key_input.split(",") if k.strip()]
+            cfg.api_keys = keys
+            cfg.api_key = keys[0] if keys else None
         model = input(f"Model name [current: {cfg.model}]: ").strip()
         if model:
             cfg.model = model
@@ -149,6 +152,12 @@ def configure_wizard() -> None:
         model = input("Model name: ").strip()
         if model:
             cfg.model = model
+
+    failover_choice = input(f"Enable Multi-Provider Failover Waterfall? (Gemini ➔ Groq ➔ OpenRouter ➔ Local Ollama) [Y/n]: ").strip().lower()
+    if failover_choice in ("n", "no"):
+        cfg.failover_enabled = False
+    else:
+        cfg.failover_enabled = True
 
     safe = input(f"Enable Safe Mode? (asks confirmation for dangerous commands) [Y/n]: ").strip().lower()
     if safe in ("n", "no"):

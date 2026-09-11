@@ -129,6 +129,29 @@ export GEMINI_API_KEY="AIza..."            # if using Gemini
 export OPENAI_API_KEY="sk-..."             # if using OpenAI
 ```
 
+### 🔄 Smart Failover Waterfall & Key Rotation (100% Free AI)
+LinAgent features an automated **Failover Waterfall** and **Key-Rotation Pool**:
+
+```
+[1. Google Gemini (1,500/day free)]
+       │ (Hit Rate Limit HTTP 429)
+       ▼
+[2. Groq Cloud (14,400/day free)]
+       │ (Hit Rate Limit or Network Error)
+       ▼
+[3. OpenRouter Free Tier (:free models)]
+       │ (Exhausted or Offline)
+       ▼
+[4. Local Ollama (100% Offline on Linux CPU)]
+       │
+       ▼
+  Never Fails!
+```
+
+- **Key Rotation**: You can provide multiple keys for the same provider (e.g. `GEMINI_API_KEYS="key1,key2,key3"`). When one key hits its quota limit (HTTP 429), LinAgent rotates to the next key automatically.
+- **Provider Waterfall**: If all keys for Gemini are exhausted, LinAgent cascades to Groq, then OpenRouter, and finally drops down to your local **Ollama** running offline on your Linux CPU.
+- **Enable/Disable**: Toggle via `linagent config` or set `export LINAGENT_AUTO_FAILOVER=true`.
+
 Configuration is persisted to `~/.config/linagent/config.json`.
 
 ---
