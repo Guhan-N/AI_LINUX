@@ -1,0 +1,15 @@
+[Unit]
+Description=LinAgent Autonomous Linux AI Assistant Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=%I
+WorkingDirectory=/home/%I
+ExecStart=/usr/local/bin/linagent web --host 127.0.0.1 --port 8808
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

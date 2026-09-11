@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "linagent"
+version = "1.0.0"
+description = "Lightweight Autonomous AI Assistant for Linux: Automation, Browsing, Searching, and Continuous Learning"
+readme = "README.md"
+authors = [{ name = "LinAgent Team" }]
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = [
+    "pydantic>=2.0.0",
+    "openai>=1.0.0",
+    "requests>=2.28.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0"
+]
+
+[project.optional-dependencies]
+browser = ["playwright>=1.40.0"]
+dev = ["pytest>=7.0.0"]
+
+[project.scripts]
+linagent = "linagent.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["linagent*"]
+
+[tool.setuptools.package-data]
+"linagent.web" = ["static/*"]

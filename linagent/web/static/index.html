@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinAgent - Linux AI Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.7);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                  radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+                  var(--bg-primary);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-tag {
+      font-size: 0.7rem;
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-cyan);
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.25rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-tab.active, .nav-tab:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    .nav-tab.active {
+      color: var(--accent-cyan);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Telemetry Bar */
+    .telemetry-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      background: rgba(17, 24, 39, 0.5);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .stat-val {
+      font-size: 1.15rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      color: #fff;
+    }
+
+    .stat-bar {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 0.25rem;
+    }
+
+    .stat-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    /* Main Content Area */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem;
+      gap: 1rem;
+    }
+
+    /* Quick Action Chips */
+    .quick-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .action-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+
+    .action-chip:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: var(--accent-blue);
+      transform: translateY(-1px);
+    }
+
+    /* Chat Messages Box */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      min-height: 500px;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 1.25rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .message-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      max-width: 85%;
+    }
+
+    .message-row.user {
+      align-self: flex-end;
+    }
+
+    .message-row.assistant {
+      align-self: flex-start;
+    }
+
+    .message-bubble {
+      padding: 0.85rem 1.15rem;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .message-row.user .message-bubble {
+      background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+      color: white;
+      border-bottom-right-radius: 2px;
+    }
+
+    .message-row.assistant .message-bubble {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-bottom-left-radius: 2px;
+    }
+
+    /* Tool Call Execution Card */
+    .tool-card {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin: 0.25rem 0;
+    }
+
+    .tool-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--accent-cyan);
+      font-weight: 500;
+    }
+
+    .tool-out {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.5rem;
+      border-radius: 4px;
+      color: #cbd5e1;
+      max-height: 160px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 0.75rem;
+    }
+
+    /* Input Bar */
+    .chat-input-wrapper {
+      padding: 1rem;
+      background: rgba(11, 15, 25, 0.9);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .chat-input:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    .send-btn {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .send-btn:hover {
+      opacity: 0.9;
+      transform: scale(1.02);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Tool and Memory View Panels */
+    .panel-view {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .panel-view.active {
+      display: block;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+    }
+
+    .tool-item-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .tool-item-name {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--accent-cyan);
+      font-size: 0.9rem;
+    }
+
+    .tool-item-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">L</div>
+      <div>
+        <div class="brand-title">LinAgent</div>
+      </div>
+      <div class="brand-tag">Linux Assistant</div>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('chat')">Assistant</button>
+      <button class="nav-tab" onclick="switchTab('tools')">Tools</button>
+      <button class="nav-tab" onclick="switchTab('memory')">Memory</button>
+    </div>
+  </header>
+
+  <!-- Live Telemetry Header -->
+  <div class="telemetry-bar">
+    <div class="stat-card">
+      <div class="stat-label"><span>System</span><span id="os-arch">Linux</span></div>
+      <div class="stat-val" id="os-name" style="font-size: 0.95rem;">Detecting...</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><span>Memory Usage</span><span id="ram-pct">0%</span></div>
+      <div class="stat-val" id="ram-val">-- / -- MB</div>
+      <div class="stat-bar"><div class="stat-fill" id="ram-bar"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><span>Root Disk</span><span id="disk-pct">0%</span></div>
+      <div class="stat-val" id="disk-val">-- / -- GB</div>
+      <div class="stat-bar"><div class="stat-fill" id="disk-bar"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><span>Uptime</span></div>
+      <div class="stat-val" id="uptime-val">--</div>
+    </div>
+  </div>
+
+  <main>
+    <!-- Chat View -->
+    <div id="chat-tab" style="display: flex; flex-direction: column; gap: 1rem; flex: 1;">
+      <div class="quick-actions">
+        <button class="action-chip" onclick="quickPrompt('Summarize the Linux system overview and resource stats')">⚡ System Overview</button>
+        <button class="action-chip" onclick="quickPrompt('Find the top 5 memory consuming processes')">📊 Top Processes</button>
+        <button class="action-chip" onclick="quickPrompt('Check root disk usage and find any directories larger than 1GB')">💾 Disk Audit</button>
+        <button class="action-chip" onclick="quickPrompt('Search DuckDuckGo for the latest Linux kernel stable release')">🌐 Web Search</button>
+        <button class="action-chip" onclick="quickPrompt('What facts and preferences do you remember about this machine?')">🧠 Recall Memory</button>
+      </div>
+
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-box">
+          <div class="message-row assistant">
+            <div class="message-bubble">
+              👋 <strong>Hello! I am LinAgent</strong>, your lightweight Linux AI assistant.<br><br>
+              I can automate bash tasks, inspect services with <code>systemctl</code>, monitor resources, search the web via DuckDuckGo, scrape docs, and continuously learn your preferences and server recipes. What can I do for you today?
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-wrapper">
+          <input
+            type="text"
+            id="user-input"
+            class="chat-input"
+            placeholder="Ask LinAgent to automate, search, browse, or monitor..."
+            onkeydown="if(event.key === 'Enter') sendMessage()"
+          />
+          <button id="send-btn" class="send-btn" onclick="sendMessage()">
+            Send ↵
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tools View -->
+    <div id="tools-tab" class="panel-view">
+      <h2 style="margin-bottom: 1rem; font-size: 1.25rem;">Installed Tools & Capabilities</h2>
+      <div class="tool-grid" id="tools-container">Loading tools...</div>
+    </div>
+
+    <!-- Memory View -->
+    <div id="memory-tab" class="panel-view">
+      <h2 style="margin-bottom: 1rem; font-size: 1.25rem;">Persistent Memory & Knowledge Base</h2>
+      <div id="memory-container">Loading memories...</div>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = window.location.origin;
+
+    async function updateSystemTelemetry() {
+      try {
+        const res = await fetch(`${API_BASE}/api/system`);
+        const data = await res.json();
+        if (data.os) document.getElementById('os-name').textContent = data.os;
+        if (data.arch) document.getElementById('os-arch').textContent = data.arch;
+        if (data.uptime) document.getElementById('uptime-val').textContent = data.uptime;
+
+        if (data.memory && data.memory.total_mb) {
+          document.getElementById('ram-val').textContent = `${data.memory.used_mb} / ${data.memory.total_mb} MB`;
+          document.getElementById('ram-pct').textContent = `${data.memory.percent_used}%`;
+          document.getElementById('ram-bar').style.width = `${data.memory.percent_used}%`;
+        }
+
+        if (data.disk_root && data.disk_root.total_gb) {
+          document.getElementById('disk-val').textContent = `${data.disk_root.used_gb} / ${data.disk_root.total_gb} GB`;
+          const pct = data.disk_root.percent_used || Math.round((data.disk_root.used_gb / data.disk_root.total_gb) * 100);
+          document.getElementById('disk-pct').textContent = `${pct}%`;
+          document.getElementById('disk-bar').style.width = `${pct}%`;
+        }
+      } catch (err) {
+        console.warn('Telemetry fetch error:', err);
+      }
+    }
+
+    async function loadTools() {
+      try {
+        const res = await fetch(`${API_BASE}/api/tools`);
+        const data = await res.json();
+        const container = document.getElementById('tools-container');
+        container.innerHTML = '';
+        data.tools.forEach(t => {
+          const div = document.createElement('div');
+          div.className = 'tool-item-card';
+          div.innerHTML = `
+            <div class="tool-item-name">${t.name}</div>
+            <div class="tool-item-desc">${t.description}</div>
+          `;
+          container.appendChild(div);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadMemories() {
+      try {
+        const res = await fetch(`${API_BASE}/api/memories`);
+        const data = await res.json();
+        const container = document.getElementById('memory-container');
+        if (!data.memories || data.memories.length === 0) {
+          container.innerHTML = '<p style="color: var(--text-muted)">No memories stored yet. Use the chat to teach LinAgent facts or solutions.</p>';
+          return;
+        }
+        let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+        data.memories.forEach(m => {
+          html += `
+            <div class="tool-item-card">
+              <div style="display: flex; justify-content: space-between;">
+                <span class="tool-item-name">[${m.category.toUpperCase()}] ${m.key}</span>
+              </div>
+              <div class="tool-item-desc">${m.content}</div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.getElementById('chat-tab').style.display = tab === 'chat' ? 'flex' : 'none';
+      document.getElementById('tools-tab').style.display = tab === 'tools' ? 'block' : 'none';
+      document.getElementById('memory-tab').style.display = tab === 'memory' ? 'block' : 'none';
+
+      if (tab === 'tools') loadTools();
+      if (tab === 'memory') loadMemories();
+    }
+
+    function quickPrompt(text) {
+      document.getElementById('user-input').value = text;
+      sendMessage();
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('user-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.value = '';
+      const sendBtn = document.getElementById('send-btn');
+      sendBtn.disabled = true;
+
+      const chatBox = document.getElementById('chat-box');
+
+      // Append user bubble
+      const userDiv = document.createElement('div');
+      userDiv.className = 'message-row user';
+      userDiv.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
+      chatBox.appendChild(userDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      // Append pending assistant bubble
+      const assistDiv = document.createElement('div');
+      assistDiv.className = 'message-row assistant';
+      assistDiv.innerHTML = `<div class="message-bubble" id="pending-msg">Thinking & executing...</div>`;
+      chatBox.appendChild(assistDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+
+        let bubbleHtml = '';
+
+        // Render tool trace cards if any
+        if (data.trace && data.trace.length > 0) {
+          data.trace.forEach(step => {
+            if (step.type === 'tool_end') {
+              bubbleHtml += `
+                <div class="tool-card">
+                  <div class="tool-header">
+                    <span>⚡ Tool: ${step.tool}</span>
+                    <span style="color: ${step.success ? 'var(--accent-green)' : 'var(--accent-red)'}">
+                      ${step.success ? '✓ Success' : '✗ Failed'}
+                    </span>
+                  </div>
+                  <div class="tool-out">${escapeHtml(step.output || step.error || '')}</div>
+                </div>
+              `;
+            }
+          });
+        }
+
+        bubbleHtml += `<div>${formatMarkdown(data.reply || '')}</div>`;
+        assistDiv.querySelector('.message-bubble').innerHTML = bubbleHtml;
+
+      } catch (err) {
+        assistDiv.querySelector('.message-bubble').innerHTML = `<span style="color: var(--accent-red)">Error: ${err.message}</span>`;
+      } finally {
+        sendBtn.disabled = false;
+        chatBox.scrollTop = chatBox.scrollHeight;
+        updateSystemTelemetry();
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function formatMarkdown(str) {
+      let s = escapeHtml(str);
+      s = s.replace(/\n\n/g, '<br><br>');
+      s = s.replace(/\n/g, '<br>');
+      s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+      s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      return s;
+    }
+
+    // Auto-refresh telemetry every 10 seconds
+    updateSystemTelemetry();
+    setInterval(updateSystemTelemetry, 10000);
+  </script>
+</body>
+</html>
