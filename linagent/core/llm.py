@@ -177,17 +177,19 @@ class RotationalProvider:
         if self.api_keys:
             key = self.api_keys[self.key_index]
 
-        base_url = self.spec.base_url
         p = self.spec.provider.lower()
-        if not base_url:
-            if p == "ollama":
-                base_url = "http://localhost:11434/v1"
-            elif p == "groq":
-                base_url = "https://api.groq.com/openai/v1"
-            elif p == "gemini":
-                base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-            elif p == "openrouter":
-                base_url = "https://openrouter.ai/api/v1"
+        base_url = self.spec.base_url
+
+        # Canonical endpoints for standard providers:
+        # Prevent local Ollama base_url from leaking when user switches to cloud providers
+        if p == "gemini" and (not base_url or "localhost" in base_url or "127.0.0.1" in base_url):
+            base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+        elif p == "groq" and (not base_url or "localhost" in base_url or "127.0.0.1" in base_url):
+            base_url = "https://api.groq.com/openai/v1"
+        elif p == "openrouter" and (not base_url or "localhost" in base_url or "127.0.0.1" in base_url):
+            base_url = "https://openrouter.ai/api/v1"
+        elif p == "ollama" and (not base_url or "googleapis" in base_url or "api.groq" in base_url or "openrouter" in base_url):
+            base_url = "http://localhost:11434/v1"
 
         return OpenAICompatibleClient(
             api_key=key,

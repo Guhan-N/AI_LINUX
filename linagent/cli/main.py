@@ -127,6 +127,8 @@ def configure_wizard() -> None:
     choice = input(f"Choice [current: {cfg.provider}]: ").strip()
     provider_map = {"1": "ollama", "2": "groq", "3": "gemini", "4": "openai", "5": "custom"}
     if choice in provider_map:
+        if cfg.provider != provider_map[choice]:
+            cfg.base_url = None  # Reset endpoint when switching provider
         cfg.provider = provider_map[choice]
 
     if cfg.provider == "ollama":
