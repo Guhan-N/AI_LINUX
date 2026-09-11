@@ -51,6 +51,8 @@ def test_multi_provider_waterfall_failover(monkeypatch):
         return c
 
     monkeypatch.setattr(RotationalProvider, "get_next_client", mock_get_next_client)
+    import shutil
+    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/ollama" if cmd == "ollama" else None)
 
     providers = [
         ProviderSpec(provider="gemini", model="gemini-2.0-flash", api_keys=["g_key"]),

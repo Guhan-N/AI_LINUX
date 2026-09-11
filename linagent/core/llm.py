@@ -222,6 +222,11 @@ class FailoverLLMClient(BaseLLMClient):
         errors = []
 
         for provider in self.providers:
+            if provider.spec.provider.lower() == "ollama":
+                import shutil
+                if not shutil.which("ollama"):
+                    continue
+
             num_keys = max(1, len(provider.api_keys))
 
             for attempt in range(num_keys):
