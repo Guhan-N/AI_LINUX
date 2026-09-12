@@ -119,7 +119,7 @@ def configure_wizard() -> None:
     print("\n--- LinAgent Configuration Wizard ---\n")
     print("Select LLM Provider:")
     print("  1) Ollama (100% Free, Local, Offline - e.g. llama3.2, qwen2.5-coder)")
-    print("  2) Groq (Free fast cloud API - e.g. llama-3.3-70b-versatile)")
+    print("  2) Groq (Free fast cloud API - e.g. openai/gpt-oss-120b)")
     print("  3) Google Gemini (Free tier, fast - e.g. gemini-flash-latest)")
     print("  4) OpenAI (e.g. gpt-4o-mini, gpt-4o)")
     print("  5) Custom OpenAI-compatible endpoint (vLLM, LocalAI, LM Studio)")
@@ -144,9 +144,16 @@ def configure_wizard() -> None:
             keys = [k.strip() for k in key_input.split(",") if k.strip()]
             cfg.api_keys = keys
             cfg.api_key = keys[0] if keys else None
-        model = input(f"Model name [current: {cfg.model}]: ").strip()
-        if model:
-            cfg.model = model
+        if cfg.provider == "groq":
+            default_model = "openai/gpt-oss-120b"
+            print("  Recommended Groq models: openai/gpt-oss-120b, openai/gpt-oss-20b, qwen/qwen3.8-27b")
+        elif cfg.provider == "gemini":
+            default_model = "gemini-flash-latest"
+            print("  Recommended Gemini model: gemini-flash-latest (high free daily quota)")
+        else:
+            default_model = "gpt-4o-mini"
+        model = input(f"Model name [press Enter for {default_model}]: ").strip()
+        cfg.model = model if model else default_model
     elif cfg.provider == "custom":
         url = input("Endpoint Base URL (e.g. http://localhost:8000/v1): ").strip()
         if url:
@@ -155,7 +162,7 @@ def configure_wizard() -> None:
         if model:
             cfg.model = model
 
-    failover_choice = input(f"Enable Multi-Provider Failover Waterfall? (Gemini ➔ Groq ➔ OpenRouter ➔ Local Ollama) [Y/n]: ").strip().lower()
+    failover_choice = input(f"Enable Multi-Provider Failover Waterfall? [Y/n]: ").strip().lower()
     if failover_choice in ("n", "no"):
         cfg.failover_enabled = False
     else:
@@ -166,6 +173,21 @@ def configure_wizard() -> None:
         cfg.safe_mode = False
     else:
         cfg.safe_mode = True
+
+    from linagent.core.config import ProviderSpec
+    primary_spec = ProviderSpec(
+        provider=cfg.provider,
+        model=cfg.model,
+        api_keys=cfg.api_keys if cfg.api_keys else ([cfg.api_key] if cfg.api_key else []),
+        base_url=cfg.base_url,
+        temperature=cfg.temperature,
+    )
+    new_waterfall = [primary_spec]
+    if cfg.failover_providers:
+        for p in cfg.failover_providers:
+            if p.provider.lower().strip() != cfg.provider.lower().strip():
+                new_waterfall.append(p)
+    cfg.failover_providers = new_waterfall
 
     saved_path = save_config(cfg)
     print(f"\n✓ Configuration successfully saved to: {saved_path}\n")

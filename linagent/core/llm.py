@@ -260,8 +260,10 @@ class FailoverLLMClient(BaseLLMClient):
                 f"⚠️ [LinAgent Failover Exhausted] All providers in the waterfall chain failed:\n"
                 f"{diag}\n\n"
                 f"Tips:\n"
-                f"1. If using Ollama, make sure local daemon is active: `ollama run llama3.2:1b`\n"
-                f"2. Add a free Groq or Gemini API key using `linagent config`\n"
+                f"1. For Groq, verify your model name exists (default: `openai/gpt-oss-120b` or `openai/gpt-oss-20b`).\n"
+                f"2. For Gemini, use `gemini-flash-latest` for higher free daily quota.\n"
+                f"3. If using Ollama, make sure local daemon is active: `ollama run llama3.2:1b`\n"
+                f"4. Reconfigure anytime using `linagent config`\n"
             ),
         )
 
@@ -279,17 +281,20 @@ class FailoverLLMClient(BaseLLMClient):
 
 def create_llm_client(config: LinAgentConfig) -> BaseLLMClient:
     """Instantiate FailoverLLMClient or direct client based on configuration."""
-    # If failover is enabled and providers are defined, use FailoverLLMClient
-    if config.failover_enabled and config.failover_providers:
-        return FailoverLLMClient(config.failover_providers)
-
-    # Fallback to single primary client
-    provider = config.provider.lower().strip()
     primary_spec = ProviderSpec(
-        provider=provider,
+        provider=config.provider.lower().strip(),
         model=config.model,
         api_keys=config.api_keys if config.api_keys else ([config.api_key] if config.api_key else []),
         base_url=config.base_url,
         temperature=config.temperature,
     )
+
+    if config.failover_enabled and config.failover_providers:
+        # Ensure the user's active primary provider is attempted FIRST
+        ordered: List[ProviderSpec] = [primary_spec]
+        for p in config.failover_providers:
+            if p.provider.lower().strip() != primary_spec.provider:
+                ordered.append(p)
+        return FailoverLLMClient(ordered)
+
     return FailoverLLMClient([primary_spec])
