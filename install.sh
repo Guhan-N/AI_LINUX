@@ -70,7 +70,11 @@ fi
 # 5. Install Python dependencies
 echo -e "${COLOR_CYAN}Installing dependencies into virtual environment...${COLOR_RESET}"
 "$VENV_DIR/bin/pip" install --upgrade pip --quiet
-"$VENV_DIR/bin/pip" install -e "$INSTALL_DIR" --quiet || "$VENV_DIR/bin/pip" install openai pydantic fastapi uvicorn requests --quiet
+"$VENV_DIR/bin/pip" install -e "$INSTALL_DIR" --quiet || "$VENV_DIR/bin/pip" install openai pydantic fastapi uvicorn requests playwright --quiet
+
+# Optional live browser setup
+echo -e "${COLOR_CYAN}Configuring live browser engine...${COLOR_RESET}"
+"$VENV_DIR/bin/python3" -m playwright install chromium 2>/dev/null || true
 
 # 6. Create binary wrapper in ~/.local/bin
 WRAPPER="$BIN_DIR/linagent"

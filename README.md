@@ -24,15 +24,22 @@ It is designed with **zero bloat**: starts up in milliseconds, runs on less than
    - **Ultra-Lightweight Web Reader**: Direct HTTP scraper that extracts clean Markdown text from tutorials, documentation, and GitHub repositories without running a heavy browser.
    - Web file downloader for binaries, scripts, and archives.
 
-3. **Continuous Learning & Long-Term Memory**
+3. **Live Autonomous Browser Operations & Desktop GUI Control**
+   - **Real Visible Browser Control**: Powered by Playwright, LinAgent launches real Chromium/Firefox windows directly on your Linux desktop (`DISPLAY=:0`), allowing you to watch the agent interact in real time.
+   - **Interactive DOM Tree Inspection**: Extracts clickable buttons, search fields, forms, and links into structured selectors.
+   - **Live Actions**: Intelligently types search queries (`browser_type`), clicks buttons and video links (`browser_click`), scrolls dynamic feeds (`browser_scroll`), captures visual page snapshots (`browser_screenshot`), and closes sessions (`browser_close`).
+   - **One-Command Driver Setup**: `linagent setup-browser` downloads and configures Playwright browser drivers instantly.
+   - **Desktop GUI Control**: Can launch any Linux GUI app (`launch_gui_app`), type into active desktop windows (`type_text_into_active_window`), and take full desktop screenshots (`take_screenshot`).
+
+4. **Continuous Learning & Long-Term Memory**
    - Embedded SQLite database with **FTS5 (Full-Text Search)** indexing.
    - Remembers user preferences, project directory paths, hardware specs, and custom configurations.
    - Learns and remembers troubleshooting solutions: when an error is resolved, LinAgent stores the fix so it knows how to solve it immediately next time.
    - **Dynamic Skill Learning**: LinAgent can write and register brand-new Python tools into `~/.config/linagent/skills/` on the fly.
 
-4. **Multiple Interfaces**
+5. **Multiple Interfaces**
    - **Interactive CLI / TUI**: Live chat with syntax highlighting, streaming, and execution approval prompts.
-   - **One-Shot CLI**: Direct command execution from bash (`linagent run "find files over 500MB and compress them"`).
+   - **One-Shot CLI**: Direct command execution from bash (`linagent run "open browser and search for arch wiki"`).
    - **Modern Web Dashboard**: Embedded glassmorphic dark-mode web dashboard on `http://localhost:8808` with real-time CPU/RAM/Disk telemetry.
    - **Systemd Daemon**: Single-command background service setup (`linagent.service`).
 

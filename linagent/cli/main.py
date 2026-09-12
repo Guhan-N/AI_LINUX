@@ -192,6 +192,20 @@ def configure_wizard() -> None:
     saved_path = save_config(cfg)
     print(f"\n✓ Configuration successfully saved to: {saved_path}\n")
 
+def setup_browser() -> None:
+    """Download and set up Playwright and Chromium browser drivers."""
+    import subprocess
+    import sys
+    print("\n--- LinAgent Live Browser Setup ---")
+    print("Installing Playwright and Chromium driver for live desktop web automation...")
+    try:
+        subprocess.run([sys.executable, "-m", "pip", "install", "playwright"], check=True)
+        subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
+        print("\n✓ Live browser setup successfully completed! You can now use autonomous browsing in LinAgent.\n")
+    except Exception as e:
+        print(f"\n❌ Browser setup encountered an error: {e}")
+        print("Tip: If system chromium is installed, you can also run: sudo apt install chromium")
+
 def generate_systemd_service() -> None:
     """Generate systemd service file."""
     import sys
@@ -202,21 +216,26 @@ After=network.target
 
 [Service]
 Type=simple
-User={os.getenv('USER', 'root')}
-WorkingDirectory={os.path.expanduser('~')}
-ExecStart={py_path} -m linagent.cli.main web
+ExecStart={py_path} -m linagent.cli.main chat
 Restart=always
 RestartSec=5
-Environment=PYTHONUNBUFFERED=1
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 """
-    dest = Path("linagent.service")
+    dest = Path.home() / ".config" / "systemd" / "user" / "linagent.service"
+    dest.parent.mkdir(parents=True, exist_ok=True)
     with open(dest, "w", encoding="utf-8") as f:
         f.write(service_content)
-    print(f"Generated {dest.resolve()}")
-    print("To install as systemd service:")
+
+    print(f"\n✓ Generated systemd service file at: {dest.resolve()}")
+    print("\nTo activate as a user service:")
+    print("  systemctl --user daemon-reload")
+    print("  systemctl --user enable --now linagent")
+    print("\nOr copy to system services:")
     print(f"  sudo cp {dest.resolve()} /etc/systemd/system/")
     print("  sudo systemctl daemon-reload")
     print("  sudo systemctl enable --now linagent")
@@ -239,6 +258,9 @@ def main() -> None:
 
     # config command
     subparsers.add_parser("config", help="Run interactive configuration setup wizard")
+
+    # setup-browser command
+    subparsers.add_parser("setup-browser", help="Download and configure Playwright & Chromium for live desktop browser automation")
 
     # tools command
     subparsers.add_parser("tools", help="List all registered tools")
@@ -265,6 +287,8 @@ def main() -> None:
         run_oneshot(agent, args.task)
     elif args.command == "config":
         configure_wizard()
+    elif args.command == "setup-browser":
+        setup_browser()
     elif args.command == "tools":
         print("\nRegistered Tools in LinAgent:")
         for t in agent.registry.list_tools():
